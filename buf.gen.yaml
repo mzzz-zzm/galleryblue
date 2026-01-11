@@ -24,16 +24,16 @@ plugins:
   # ---------------------------------------------------------
   # 3. Generates base TypeScript types (interfaces for messages)
   - local: protoc-gen-es
-    out: gen/ts
+    out: frontend/src/gen
     opt: target=ts
 
   # 4. Generates the Connect Client (The raw gRPC client)
   - local: protoc-gen-connect-es
-    out: gen/ts
+    out: frontend/src/gen
     opt: target=ts
 
   # 5. [PRO TIP] Generates React Hooks for TanStack Query
   #    Allows you to do: const { data } = useGetUsers({ id: 1 });
   - local: protoc-gen-connect-query
-    out: gen/ts
+    out: frontend/src/gen
     opt: target=ts

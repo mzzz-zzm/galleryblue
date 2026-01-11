@@ -1,5 +1,5 @@
 import { useQuery } from "@connectrpc/connect-query";
-import { getUser } from "../../../gen/ts/users/v1/user-UserService_connectquery";
+import { getUser } from "../gen/users/v1/user-UserService_connectquery";
 import { useState } from "react";
 
 import { transport } from "../lib/transport";

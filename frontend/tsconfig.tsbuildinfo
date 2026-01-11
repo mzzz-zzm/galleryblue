@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/components/UserProfile.tsx","./src/gen/users/v1/user-UserService_connectquery.ts","./src/gen/users/v1/user_connect.ts","./src/gen/users/v1/user_pb.ts","./src/lib/transport.ts"],"version":"5.9.3"}

@@ -22,15 +22,43 @@
     *   *Rationale*: High performance, concurrency support, and native Protobuf handling.
 *   **Framework**: Connect-Go
     *   *Rationale*: Simple, reliable, and interoperable gRPC support for Go.
+*   **Database**: PostgreSQL
+    *   *Rationale*: Robust, open-source, and cloud-compatible (AWS RDS, Cloud SQL, etc.) standard.
 
 ### Interface Definition
 *   **IDL**: Protocol Buffers (Protobuf)
 *   **Tooling**: Buf
-    *   *Rationale*: Modern, fast, and user-friendly Protobuf toolkit for linting, formatting, and generation.
 
----
 
-## 3. Architecture & Project Structure
+## 3. Database & Data Model
+
+### `users` Table
+Stores registered user information.
+*   `id`: UUID (Primary Key)
+*   `email`: string (Unique, Not Null)
+*   `password_hash`: string (Not Null, bcrypt/argon2)
+*   `display_name`: string
+*   `created_at`: timestamp
+*   `updated_at`: timestamp
+
+## 4. Authentication & Features
+
+### Core Features
+1.  **Registration (`/register`)**:
+    *   User signs up with Email and Password.
+    *   System hashes password and creates `users` record.
+2.  **Login (`/login`)**:
+    *   User authenticates with Email and Password.
+    *   System verifies hash and issues a session token.
+
+### API Services
+*   **AuthService**:
+    *   `Register(RegisterRequest) returns (RegisterResponse)`
+    *   `Login(LoginRequest) returns (LoginResponse)`
+*   **UserService**:
+    *   `GetUser(GetUserRequest) returns (GetUserResponse)` (protected)
+
+## 5. Architecture & Project Structure
 
 The project follows a monorepo-style layout where the API definition ensures consistency between the frontend and backend.
 
@@ -48,7 +76,7 @@ The project follows a monorepo-style layout where the API definition ensures con
 └── frontend/          # React Application
 ```
 
-## 4. Development Workflow
+## 6. Development Workflow
 
 1.  **Define API**: Schemas are written in `proto/`.
 2.  **Generate Code**: Run `buf generate` to update `gen/` with Go and TypeScript artifacts.
@@ -57,7 +85,7 @@ The project follows a monorepo-style layout where the API definition ensures con
 3.  **Implement Backend**: Fulfill the generated Go interfaces in the backend service using the generated structs.
 4.  **Implement Frontend**: Import hooks from `gen/ts` (e.g., `useGetUser`) and build UI components.
 
-## 5. Configuration Details
+## 7. Configuration Details
 
 ### `buf.gen.yaml`
 The configuration is set to version `v2` and defines plugins for both Go and TypeScript generation.
@@ -79,7 +107,7 @@ export const UserProfile = ({ userId }: { userId: string }) => {
 };
 ```
 
-## 6. Next Steps (Setup)
+## 8. Next Steps (Setup)
 1.  Initialize Go module: `go mod init github.com/mzzz-zzm/galleryblue`.
 2.  Setup `frontend` directory (e.g., `npm create vite@latest frontend`).
 3.  Create `proto` directory and initial definitions.
