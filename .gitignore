@@ -1,0 +1,18 @@
+# Local tools and temp files
+.go-sdk/
+go-sdk/
+bin/
+release.json
+*.tar.gz
+
+# Node
+node_modules/
+dist/
+.DS_Store
+
+# Go
+# binaries
+# (if any)
+
+# Editor
+.vscode/

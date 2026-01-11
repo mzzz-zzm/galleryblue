@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package users.v1;
+
+option go_package = "github.com/mzzz-zzm/galleryblue/gen/go/users/v1;usersv1";
+
+service UserService {
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+}
+
+message GetUserRequest {
+  string id = 1;
+}
+
+message GetUserResponse {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+}
