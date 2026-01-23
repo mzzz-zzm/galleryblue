@@ -1,13 +1,27 @@
-# buf.gen.frontend.yaml - Frontend TypeScript generation only
+# buf.gen.frontend.yaml - TypeScript-only generation
+#
+# This file generates ONLY TypeScript code for the frontend.
+# It does NOT require Go to be installed.
+#
+# Use this in the frontend Docker container which only has Node.js installed.
+#
+# WHY THIS FILE EXISTS:
+# --------------------
+# The frontend runs in a separate Docker container that only has Node.js,
+# not Go. This config allows generating TypeScript types and React hooks
+# without needing Go protobuf plugins.
+#
+# See also: buf.gen.yaml (full generation requiring both Go and Node.js)
+
 version: v1
 plugins:
-  # TypeScript types
+  # TypeScript types from protobuf messages
   - plugin: es
     out: frontend/src/gen
     opt: target=ts
     path: ./frontend/node_modules/.bin/protoc-gen-es
 
-  # TanStack Query hooks
+  # TanStack Query hooks for React
   - plugin: connect-query
     out: frontend/src/gen
     opt: target=ts

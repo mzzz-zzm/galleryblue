@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"crypto/rand"
-	"database/sql"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -32,22 +31,23 @@ func (s *AuthServer) Register(
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("email and password are required"))
 	}
 
-	// Check if user already exists
-	var existingID string
-	err := db.DB.QueryRowContext(ctx, "SELECT id FROM users WHERE email = $1", email).Scan(&existingID)
-	if err == nil {
-		return nil, connect.NewError(connect.CodeAlreadyExists, errors.New("user with this email already exists"))
-	} else if err != sql.ErrNoRows {
+	// Check if email already exists
+	exists, err := db.EmailExists(ctx, email)
+	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
+	}
+	if exists {
+		return nil, connect.NewError(connect.CodeAlreadyExists, errors.New("user with this email already exists"))
 	}
 
 	// Check if display_name already exists (if provided)
 	if displayName != "" {
-		err = db.DB.QueryRowContext(ctx, "SELECT id FROM users WHERE display_name = $1", displayName).Scan(&existingID)
-		if err == nil {
-			return nil, connect.NewError(connect.CodeAlreadyExists, errors.New("user with this display name already exists"))
-		} else if err != sql.ErrNoRows {
+		exists, err = db.DisplayNameExists(ctx, displayName)
+		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
+		}
+		if exists {
+			return nil, connect.NewError(connect.CodeAlreadyExists, errors.New("user with this display name already exists"))
 		}
 	}
 
@@ -58,11 +58,7 @@ func (s *AuthServer) Register(
 	}
 
 	// Insert user
-	var userID string
-	err = db.DB.QueryRowContext(ctx,
-		"INSERT INTO users (email, password_hash, display_name) VALUES ($1, $2, $3) RETURNING id",
-		email, string(hashedPassword), displayName,
-	).Scan(&userID)
+	userID, err := db.CreateUser(ctx, email, string(hashedPassword), displayName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to create user: %w", err))
 	}
@@ -88,19 +84,16 @@ func (s *AuthServer) Login(
 	}
 
 	// Fetch user
-	var userID, passwordHash, displayName string
-	err := db.DB.QueryRowContext(ctx,
-		"SELECT id, password_hash, display_name FROM users WHERE email = $1",
-		email,
-	).Scan(&userID, &passwordHash, &displayName)
-	if err == sql.ErrNoRows {
-		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("invalid email or password"))
-	} else if err != nil {
+	user, err := db.GetUserByEmail(ctx, email)
+	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
+	}
+	if user == nil {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("invalid email or password"))
 	}
 
 	// Verify password
-	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("invalid email or password"))
 	}
 
@@ -111,13 +104,10 @@ func (s *AuthServer) Login(
 	}
 	sessionToken := hex.EncodeToString(tokenBytes)
 
-	// TODO: Store session token in database or cache (Redis) for validation
-	// For now, we just return the token (stateless approach - could use JWT instead)
-
 	return connect.NewResponse(&usersv1.LoginResponse{
 		SessionToken: sessionToken,
-		UserId:       userID,
-		DisplayName:  displayName,
-		Email:        email,
+		UserId:       user.ID,
+		DisplayName:  user.DisplayName,
+		Email:        user.Email,
 	}), nil
 }

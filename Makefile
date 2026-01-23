@@ -7,17 +7,79 @@ SERVER_CMD := cmd/server/main.go
 PID_FILE := .server.pid
 FRONTEND_PID_FILE := .frontend.pid
 
-# Check if Go SDK exists
-ifeq (,$(wildcard $(GO)))
-    $(error "Go SDK not found at $(GO). Please check your setup.")
-endif
+# Check if Go SDK exists (only for local targets)
+HAS_GO := $(shell test -f $(GO) && echo "yes" || echo "no")
 
 .PHONY: all
 all: build
 
+# =============================================================================
+# DOCKER COMMANDS (Recommended)
+# =============================================================================
+
+# Start all services in Docker (production mode)
+.PHONY: docker-up
+docker-up:
+	@echo "Starting services with Docker..."
+	docker compose up -d
+	@echo ""
+	@echo "Services running:"
+	@echo "  Frontend: http://localhost:3000"
+	@echo "  Backend:  http://localhost:8080"
+	@echo "  Database: localhost:5432"
+
+# Start development mode with hot-reload
+.PHONY: docker-dev
+docker-dev:
+	@echo "Starting development environment..."
+	docker compose --profile dev up -d db dev
+	@echo ""
+	@echo "Development services running:"
+	@echo "  Frontend: http://localhost:5173"
+	@echo "  Backend:  http://localhost:8080"
+	@echo "  Database: localhost:5432"
+
+# Stop all Docker services
+.PHONY: docker-down
+docker-down:
+	@echo "Stopping Docker services..."
+	docker compose --profile dev down
+
+# Rebuild and restart Docker services
+.PHONY: docker-rebuild
+docker-rebuild:
+	@echo "Rebuilding Docker images..."
+	docker compose build --no-cache
+	docker compose up -d
+	@echo "Services rebuilt and running."
+
+# View Docker logs
+.PHONY: docker-logs
+docker-logs:
+	docker compose logs -f
+
+# View backend logs only
+.PHONY: docker-logs-backend
+docker-logs-backend:
+	docker compose logs -f backend
+
+# Clean up Docker resources
+.PHONY: docker-clean
+docker-clean:
+	@echo "Stopping and removing Docker resources..."
+	docker compose --profile dev down -v --rmi local
+	@echo "Docker cleanup complete."
+
+# =============================================================================
+# LOCAL DEVELOPMENT COMMANDS (Requires local Go SDK)
+# =============================================================================
+
 # Install dependencies
 .PHONY: install-deps
 install-deps:
+ifeq ($(HAS_GO),no)
+	$(error "Go SDK not found at $(GO). Use Docker commands or install Go SDK.")
+endif
 	@echo "Installing backend tools..."
 	@mkdir -p $(BIN_DIR)
 	@export GOBIN=$(BIN_DIR) && $(GO) install google.golang.org/protobuf/cmd/protoc-gen-go@latest
@@ -35,12 +97,15 @@ generate:
 # Build everything
 .PHONY: build
 build: generate
+ifeq ($(HAS_GO),no)
+	$(error "Go SDK not found at $(GO). Use 'make docker-up' instead.")
+endif
 	@echo "Building backend..."
 	@$(GO) build -o $(BIN_DIR)/server $(SERVER_CMD)
 	@echo "Building frontend..."
 	@cd $(FRONTEND_DIR) && npm run build
 
-# Start services
+# Start services (local)
 .PHONY: start
 start: build
 	@echo "Starting backend server..."
@@ -56,7 +121,7 @@ start: build
 	@cd $(FRONTEND_DIR) && npm run dev -- --host 0.0.0.0 > ../frontend.log 2>&1 & echo $$! > $(FRONTEND_PID_FILE)
 	@echo "Frontend started with PID $$(cat $(FRONTEND_PID_FILE))"
 
-# Stop services
+# Stop services (local)
 .PHONY: stop
 stop:
 	@# Try to kill server from PID file
@@ -92,6 +157,28 @@ clean: stop
 	@rm -rf $(BIN_DIR)/server
 	@rm -rf $(FRONTEND_DIR)/dist
 	@rm -rf server.log frontend.log
-	@# Optional: clean generated code if desired, but often it's better to keep unless doing a full reset
-	@# rm -rf gen/go frontend/src/gen
 	@echo "Clean complete."
+
+# =============================================================================
+# HELP
+# =============================================================================
+
+.PHONY: help
+help:
+	@echo "GalleryBlue Makefile Commands"
+	@echo ""
+	@echo "Docker Commands (Recommended):"
+	@echo "  make docker-up       Start all services (production)"
+	@echo "  make docker-dev      Start development with hot-reload"
+	@echo "  make docker-down     Stop all Docker services"
+	@echo "  make docker-rebuild  Rebuild and restart services"
+	@echo "  make docker-logs     View all Docker logs"
+	@echo "  make docker-clean    Remove containers, volumes, images"
+	@echo ""
+	@echo "Local Commands (Requires Go SDK at .go-sdk/):"
+	@echo "  make install-deps    Install Go plugins & npm packages"
+	@echo "  make generate        Generate protobuf code"
+	@echo "  make build           Build backend & frontend"
+	@echo "  make start           Start services locally"
+	@echo "  make stop            Stop local services"
+	@echo "  make clean           Clean build artifacts"

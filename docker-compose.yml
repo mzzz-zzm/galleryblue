@@ -20,11 +20,12 @@ services:
     networks:
       - galleryblue-network
 
-  # Go Backend
+  # Go Backend (production build)
   backend:
     build:
       context: .
       dockerfile: Dockerfile
+      target: production
     container_name: galleryblue-backend
     environment:
       DATABASE_URL: postgres://galleryblue:galleryblue@db:5432/galleryblue?sslmode=disable
@@ -49,11 +50,12 @@ services:
     networks:
       - galleryblue-network
 
-  # Development container with all tools (optional, for development)
+  # Development container with hot-reload (optional)
   dev:
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
+      target: development
     container_name: galleryblue-dev
     environment:
       DATABASE_URL: postgres://galleryblue:galleryblue@db:5432/galleryblue?sslmode=disable

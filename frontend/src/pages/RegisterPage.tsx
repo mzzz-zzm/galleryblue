@@ -4,6 +4,7 @@ import { useMutation } from '@connectrpc/connect-query';
 import { register } from '../gen/users/v1/user-AuthService_connectquery';
 import { useAuth } from '../context/AuthContext';
 import { transport } from '../lib/transport';
+import { FormField } from '../components/FormField';
 
 export const RegisterPage = () => {
     const navigate = useNavigate();
@@ -26,7 +27,6 @@ export const RegisterPage = () => {
                 displayName,
             });
 
-            // Auto-login after registration
             login('registered', {
                 userId: response.userId,
                 displayName: response.displayName,
@@ -47,40 +47,34 @@ export const RegisterPage = () => {
                 <form onSubmit={handleSubmit} className="auth-form">
                     {error && <div className="error-message">{error}</div>}
 
-                    <div className="form-group">
-                        <label htmlFor="email">Email</label>
-                        <input
-                            id="email"
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            placeholder="you@example.com"
-                        />
-                    </div>
+                    <FormField
+                        id="email"
+                        label="Email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        required
+                    />
 
-                    <div className="form-group">
-                        <label htmlFor="displayName">Display Name</label>
-                        <input
-                            id="displayName"
-                            type="text"
-                            value={displayName}
-                            onChange={(e) => setDisplayName(e.target.value)}
-                            placeholder="Your name"
-                        />
-                    </div>
+                    <FormField
+                        id="displayName"
+                        label="Display Name"
+                        type="text"
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        placeholder="Your name"
+                    />
 
-                    <div className="form-group">
-                        <label htmlFor="password">Password</label>
-                        <input
-                            id="password"
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            placeholder="••••••••"
-                        />
-                    </div>
+                    <FormField
+                        id="password"
+                        label="Password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                    />
 
                     <button
                         type="submit"

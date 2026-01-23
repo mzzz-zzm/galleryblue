@@ -4,6 +4,7 @@ import { useMutation } from '@connectrpc/connect-query';
 import { updateUser } from '../gen/users/v1/user-UserService_connectquery';
 import { useAuth } from '../context/AuthContext';
 import { createAuthenticatedTransport } from '../lib/transport';
+import { FormField } from '../components/FormField';
 
 export const UpdatePage = () => {
     const navigate = useNavigate();
@@ -15,7 +16,6 @@ export const UpdatePage = () => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
-    // Create authenticated transport with user ID
     const authTransport = useMemo(() => {
         return user?.userId ? createAuthenticatedTransport(user.userId) : null;
     }, [user?.userId]);
@@ -25,7 +25,6 @@ export const UpdatePage = () => {
         onSuccess: () => { },
     });
 
-    // Redirect if not authenticated
     if (!isAuthenticated || !user) {
         navigate('/login');
         return null;
@@ -72,52 +71,44 @@ export const UpdatePage = () => {
                     {error && <div className="error-message">{error}</div>}
                     {success && <div className="success-message">{success}</div>}
 
-                    <div className="form-group">
-                        <label htmlFor="currentPassword">Current Password *</label>
-                        <input
-                            id="currentPassword"
-                            type="password"
-                            value={currentPassword}
-                            onChange={(e) => setCurrentPassword(e.target.value)}
-                            required
-                            placeholder="Enter current password to confirm"
-                        />
-                    </div>
+                    <FormField
+                        id="currentPassword"
+                        label="Current Password *"
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder="Enter current password to confirm"
+                        required
+                    />
 
                     <hr className="form-divider" />
 
-                    <div className="form-group">
-                        <label htmlFor="newDisplayName">New Display Name</label>
-                        <input
-                            id="newDisplayName"
-                            type="text"
-                            value={newDisplayName}
-                            onChange={(e) => setNewDisplayName(e.target.value)}
-                            placeholder={user.displayName || 'Leave blank to keep current'}
-                        />
-                    </div>
+                    <FormField
+                        id="newDisplayName"
+                        label="New Display Name"
+                        type="text"
+                        value={newDisplayName}
+                        onChange={(e) => setNewDisplayName(e.target.value)}
+                        placeholder={user.displayName || 'Leave blank to keep current'}
+                    />
 
-                    <div className="form-group">
-                        <label htmlFor="newEmail">New Email</label>
-                        <input
-                            id="newEmail"
-                            type="email"
-                            value={newEmail}
-                            onChange={(e) => setNewEmail(e.target.value)}
-                            placeholder={user.email || 'Leave blank to keep current'}
-                        />
-                    </div>
+                    <FormField
+                        id="newEmail"
+                        label="New Email"
+                        type="email"
+                        value={newEmail}
+                        onChange={(e) => setNewEmail(e.target.value)}
+                        placeholder={user.email || 'Leave blank to keep current'}
+                    />
 
-                    <div className="form-group">
-                        <label htmlFor="newPassword">New Password</label>
-                        <input
-                            id="newPassword"
-                            type="password"
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            placeholder="Leave blank to keep current"
-                        />
-                    </div>
+                    <FormField
+                        id="newPassword"
+                        label="New Password"
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Leave blank to keep current"
+                    />
 
                     <button
                         type="submit"

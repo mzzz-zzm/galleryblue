@@ -1,4 +1,24 @@
-# buf.gen.yaml - Full generation (requires Go)
+# buf.gen.yaml - Full generation (requires Go + Node.js)
+#
+# This file generates BOTH Go backend code AND TypeScript frontend code.
+# It requires both Go protobuf plugins AND Node.js protobuf plugins to be installed.
+#
+# Use this when running locally with all tools available (e.g., development machine
+# or the unified Docker container).
+#
+# WHY WE HAVE TWO FILES:
+# ---------------------
+# The frontend and backend run in separate Docker containers during production builds.
+# The frontend container only has Node.js installed, not Go. It uses buf.gen.frontend.yaml
+# which only generates TypeScript code using Node.js-based plugins.
+#
+# This file (buf.gen.yaml) is used:
+# - In the backend Dockerfile (has Go installed)
+# - In the dev container (has both Go and Node.js)
+# - On developer machines with full toolchain
+#
+# See also: buf.gen.frontend.yaml (TypeScript-only generation for frontend container)
+
 version: v1
 managed:
   enabled: true

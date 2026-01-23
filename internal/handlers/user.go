@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 
@@ -27,21 +26,18 @@ func (s *UserServer) GetUser(
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("user id is required"))
 	}
 
-	var id, displayName, email string
-	err := db.DB.QueryRowContext(ctx,
-		"SELECT id, display_name, email FROM users WHERE id = $1",
-		userID,
-	).Scan(&id, &displayName, &email)
-	if err == sql.ErrNoRows {
-		return nil, connect.NewError(connect.CodeNotFound, errors.New("user not found"))
-	} else if err != nil {
+	user, err := db.GetUserByID(ctx, userID)
+	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
+	}
+	if user == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.New("user not found"))
 	}
 
 	return connect.NewResponse(&usersv1.GetUserResponse{
-		Id:    id,
-		Name:  displayName,
-		Email: email,
+		Id:    user.ID,
+		Name:  user.DisplayName,
+		Email: user.Email,
 	}), nil
 }
 
@@ -50,8 +46,6 @@ func (s *UserServer) UpdateUser(
 	ctx context.Context,
 	req *connect.Request[usersv1.UpdateUserRequest],
 ) (*connect.Response[usersv1.UpdateUserResponse], error) {
-	// Get user ID from context (should be set by auth middleware)
-	// For now, we'll extract it from a header
 	userID := req.Header().Get("X-User-ID")
 	if userID == "" {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("authentication required"))
@@ -62,53 +56,45 @@ func (s *UserServer) UpdateUser(
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("current password is required"))
 	}
 
-	// Verify current password
-	var passwordHash, currentDisplayName, currentEmail string
-	err := db.DB.QueryRowContext(ctx,
-		"SELECT password_hash, display_name, email FROM users WHERE id = $1",
-		userID,
-	).Scan(&passwordHash, &currentDisplayName, &currentEmail)
-	if err == sql.ErrNoRows {
-		return nil, connect.NewError(connect.CodeNotFound, errors.New("user not found"))
-	} else if err != nil {
+	// Fetch user
+	user, err := db.GetUserByID(ctx, userID)
+	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
 	}
+	if user == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.New("user not found"))
+	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(currentPassword)); err != nil {
+	// Verify password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(currentPassword)); err != nil {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("incorrect password"))
 	}
 
-	// Build update query dynamically based on provided fields
-	newDisplayName := currentDisplayName
-	newEmail := currentEmail
-	newPasswordHash := passwordHash
+	// Build updated values
+	newDisplayName := user.DisplayName
+	newEmail := user.Email
+	newPasswordHash := user.PasswordHash
 
 	// Check new display name uniqueness
 	if req.Msg.NewDisplayName != nil && *req.Msg.NewDisplayName != "" {
-		var existingID string
-		err = db.DB.QueryRowContext(ctx,
-			"SELECT id FROM users WHERE display_name = $1 AND id != $2",
-			*req.Msg.NewDisplayName, userID,
-		).Scan(&existingID)
-		if err == nil {
-			return nil, connect.NewError(connect.CodeAlreadyExists, errors.New("display name already taken"))
-		} else if err != sql.ErrNoRows {
+		exists, err := db.DisplayNameExistsExcluding(ctx, *req.Msg.NewDisplayName, userID)
+		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
+		}
+		if exists {
+			return nil, connect.NewError(connect.CodeAlreadyExists, errors.New("display name already taken"))
 		}
 		newDisplayName = *req.Msg.NewDisplayName
 	}
 
 	// Check new email uniqueness
 	if req.Msg.NewEmail != nil && *req.Msg.NewEmail != "" {
-		var existingID string
-		err = db.DB.QueryRowContext(ctx,
-			"SELECT id FROM users WHERE email = $1 AND id != $2",
-			*req.Msg.NewEmail, userID,
-		).Scan(&existingID)
-		if err == nil {
-			return nil, connect.NewError(connect.CodeAlreadyExists, errors.New("email already taken"))
-		} else if err != sql.ErrNoRows {
+		exists, err := db.EmailExistsExcluding(ctx, *req.Msg.NewEmail, userID)
+		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("database error: %w", err))
+		}
+		if exists {
+			return nil, connect.NewError(connect.CodeAlreadyExists, errors.New("email already taken"))
 		}
 		newEmail = *req.Msg.NewEmail
 	}
@@ -123,11 +109,7 @@ func (s *UserServer) UpdateUser(
 	}
 
 	// Update user
-	_, err = db.DB.ExecContext(ctx,
-		"UPDATE users SET display_name = $1, email = $2, password_hash = $3, updated_at = NOW() WHERE id = $4",
-		newDisplayName, newEmail, newPasswordHash, userID,
-	)
-	if err != nil {
+	if err := db.UpdateUser(ctx, userID, newDisplayName, newEmail, newPasswordHash); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to update user: %w", err))
 	}
 

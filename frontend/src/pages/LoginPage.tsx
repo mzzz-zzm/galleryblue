@@ -4,6 +4,7 @@ import { useMutation } from '@connectrpc/connect-query';
 import { login as loginRpc } from '../gen/users/v1/user-AuthService_connectquery';
 import { useAuth } from '../context/AuthContext';
 import { transport } from '../lib/transport';
+import { FormField } from '../components/FormField';
 
 export const LoginPage = () => {
     const navigate = useNavigate();
@@ -19,10 +20,7 @@ export const LoginPage = () => {
         setError('');
 
         try {
-            const response = await loginMutation.mutateAsync({
-                email,
-                password,
-            });
+            const response = await loginMutation.mutateAsync({ email, password });
 
             login(response.sessionToken, {
                 userId: response.userId,
@@ -44,29 +42,25 @@ export const LoginPage = () => {
                 <form onSubmit={handleSubmit} className="auth-form">
                     {error && <div className="error-message">{error}</div>}
 
-                    <div className="form-group">
-                        <label htmlFor="email">Email</label>
-                        <input
-                            id="email"
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            placeholder="you@example.com"
-                        />
-                    </div>
+                    <FormField
+                        id="email"
+                        label="Email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        required
+                    />
 
-                    <div className="form-group">
-                        <label htmlFor="password">Password</label>
-                        <input
-                            id="password"
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            placeholder="••••••••"
-                        />
-                    </div>
+                    <FormField
+                        id="password"
+                        label="Password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                    />
 
                     <button
                         type="submit"
