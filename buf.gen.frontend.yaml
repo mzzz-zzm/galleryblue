@@ -1,0 +1,14 @@
+# buf.gen.frontend.yaml - Frontend TypeScript generation only
+version: v1
+plugins:
+  # TypeScript types
+  - plugin: es
+    out: frontend/src/gen
+    opt: target=ts
+    path: ./frontend/node_modules/.bin/protoc-gen-es
+
+  # TanStack Query hooks
+  - plugin: connect-query
+    out: frontend/src/gen
+    opt: target=ts
+    path: ./frontend/node_modules/.bin/protoc-gen-connect-query

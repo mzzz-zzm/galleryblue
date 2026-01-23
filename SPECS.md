@@ -4,6 +4,12 @@
 **GalleryBlue** is a modern web application designed with strict type safety and high performance in mind. It leverages **ConnectRPC** to bridge a **Go** backend and a **TypeScript/React** frontend, ensuring a seamless, type-safe development experience from database to UI.
 
 ## 2. Technology Stack
+### Environment
+*   **Multiple Docker container-based
+    *   the frontend, backend, and database are run in separate containers.
+    *   docker compose is used to orchestrate those multiple containers
+*   **Devcontainer
+    *   Devcontainer makes things very complecated. Therefore Devcontainer won't be setup for this project; if .devcontainer directory exist, remove it and clean up all devcontainer related dependencies
 
 ### Frontend & Web Link
 *   **Language**: TypeScript
@@ -47,9 +53,18 @@ Stores registered user information.
 1.  **Registration (`/register`)**:
     *   User signs up with Email and Password.
     *   System hashes password and creates `users` record.
+    *   Check and return error if the registering user already exists
+    *   When registration is done correctly, return to home page with registered user status shown
 2.  **Login (`/login`)**:
     *   User authenticates with Email and Password.
     *   System verifies hash and issues a session token.
+    *   Once login is valid, return to home page with loginned user status shown
+3.  **Update(`/update`)**:
+    *   Logged in user can update their name, email, and password
+    *   To validate the genuin user, the user must type current password before proceeding update
+    *   Update is allowed to change partial information. Unchanged user status is left blank so that the server-side ignore to override exist status
+    *   When email is updated, make sure the updated email doesn't exist in the registered info
+    *   When name is update, make sure the updated name doesn't exist in the registered info
 
 ### API Services
 *   **AuthService**:

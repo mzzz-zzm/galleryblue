@@ -1,0 +1,81 @@
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: galleryblue-db
+    environment:
+      POSTGRES_USER: galleryblue
+      POSTGRES_PASSWORD: galleryblue
+      POSTGRES_DB: galleryblue
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U galleryblue" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - galleryblue-network
+
+  # Go Backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: galleryblue-backend
+    environment:
+      DATABASE_URL: postgres://galleryblue:galleryblue@db:5432/galleryblue?sslmode=disable
+    ports:
+      - "8081:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - galleryblue-network
+
+  # React Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: galleryblue-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - galleryblue-network
+
+  # Development container with all tools (optional, for development)
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: galleryblue-dev
+    environment:
+      DATABASE_URL: postgres://galleryblue:galleryblue@db:5432/galleryblue?sslmode=disable
+    volumes:
+      - .:/app
+      - /app/frontend/node_modules
+      - go_cache:/root/go
+    ports:
+      - "8080:8080"
+      - "5173:5173"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - galleryblue-network
+    profiles:
+      - dev
+
+networks:
+  galleryblue-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  go_cache:

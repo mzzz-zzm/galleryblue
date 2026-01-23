@@ -1,39 +1,26 @@
-# buf.gen.yaml
-version: v2
+# buf.gen.yaml - Full generation (requires Go)
+version: v1
 managed:
   enabled: true
-  override:
-    - file_option: go_package_prefix
-      value: github.com/mzzz-zzm/galleryblue/gen/go # <--- CHANGE THIS to your actual module name
+  go_package_prefix:
+    default: github.com/mzzz-zzm/galleryblue/gen/go
 plugins:
-  # ---------------------------------------------------------
   # BACKEND (Golang)
-  # ---------------------------------------------------------
-  # 1. Generates the base Go structs (Request/Response messages)
-  - local: protoc-gen-go
+  - plugin: go
     out: gen/go
     opt: paths=source_relative
 
-  # 2. Generates the Go Interfaces for your Server (gRPC/Handler)
-  - local: protoc-gen-connect-go
+  - plugin: connect-go
     out: gen/go
     opt: paths=source_relative
 
-  # ---------------------------------------------------------
   # FRONTEND (TypeScript + React)
-  # ---------------------------------------------------------
-  # 3. Generates base TypeScript types (interfaces for messages)
-  - local: protoc-gen-es
+  - plugin: es
     out: frontend/src/gen
     opt: target=ts
+    path: ./frontend/node_modules/.bin/protoc-gen-es
 
-  # 4. Generates the Connect Client (The raw gRPC client)
-  - local: protoc-gen-connect-es
+  - plugin: connect-query
     out: frontend/src/gen
     opt: target=ts
-
-  # 5. [PRO TIP] Generates React Hooks for TanStack Query
-  #    Allows you to do: const { data } = useGetUsers({ id: 1 });
-  - local: protoc-gen-connect-query
-    out: frontend/src/gen
-    opt: target=ts
+    path: ./frontend/node_modules/.bin/protoc-gen-connect-query
