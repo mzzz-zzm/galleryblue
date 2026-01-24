@@ -8,3 +8,8 @@ import { UserService } from "./user_pb";
  * @generated from rpc users.v1.UserService.GetUser
  */
 export const getUser = UserService.method.getUser;
+
+/**
+ * @generated from rpc users.v1.UserService.UpdateUser
+ */
+export const updateUser = UserService.method.updateUser;
