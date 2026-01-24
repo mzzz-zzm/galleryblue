@@ -31,6 +31,10 @@ func main() {
 	userPath, userHandler := usersv1connect.NewUserServiceHandler(&handlers.UserServer{})
 	mux.Handle(userPath, userHandler)
 
+	// Register ImageService handler
+	imagePath, imageHandler := usersv1connect.NewImageServiceHandler(&handlers.ImageServer{})
+	mux.Handle(imagePath, imageHandler)
+
 	// Add CORS support
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins: []string{"http://localhost:5173", "http://localhost:3000"},

@@ -1,129 +1,168 @@
 # Project Specifications: GalleryBlue
 
 ## 1. Overview
-**GalleryBlue** is a modern web application designed with strict type safety and high performance in mind. It leverages **ConnectRPC** to bridge a **Go** backend and a **TypeScript/React** frontend, ensuring a seamless, type-safe development experience from database to UI.
+
+**GalleryBlue** is a modern web application for sharing and managing images. Built with strict type safety using **ConnectRPC** to bridge a **Go** backend and a **TypeScript/React** frontend.
 
 ## 2. Technology Stack
-### Environment
-*   **Multiple Docker container-based
-    *   the frontend, backend, and database are run in separate containers.
-    *   docker compose is used to orchestrate those multiple containers
-*   **Devcontainer
-    *   Devcontainer makes things very complecated. Therefore Devcontainer won't be setup for this project; if .devcontainer directory exist, remove it and clean up all devcontainer related dependencies
 
-### Frontend & Web Link
-*   **Language**: TypeScript
-    *   *Rationale*: Strict typing matches Go's safety and prevents runtime errors.
-*   **Framework**: React
-    *   *Rationale*: Vast ecosystem and excellent integration with data-fetching libraries.
-*   **Build Tool**: Vite
-    *   *Rationale*: Superior performance and developer experience compared to Webpack/CRA.
-*   **API Client**: TanStack Query (React Query)
-    *   *Rationale*: Robust state management for async server state (caching, loading, retries).
-*   **Transport**: ConnectRPC (Web)
-    *   *Rationale*: Enables direct gRPC-compatible calls from the browser without requiring a simplified HTTP/JSON translation layer or complex Envoy proxies.
+### Infrastructure
+- **Docker Compose**: Orchestrates frontend, backend, and database containers
+- **nginx**: Serves frontend and proxies API requests
+
+### Frontend
+- **TypeScript** + **React** + **Vite**
+- **TanStack Query**: Server state management
+- **ConnectRPC Web**: Type-safe gRPC calls from browser
 
 ### Backend
-*   **Language**: Go (Golang)
-    *   *Rationale*: High performance, concurrency support, and native Protobuf handling.
-*   **Framework**: Connect-Go
-    *   *Rationale*: Simple, reliable, and interoperable gRPC support for Go.
-*   **Database**: PostgreSQL
-    *   *Rationale*: Robust, open-source, and cloud-compatible (AWS RDS, Cloud SQL, etc.) standard.
+- **Go** + **Connect-Go**: High-performance gRPC server
+- **PostgreSQL**: Primary database
+- **bcrypt**: Password hashing
 
-### Interface Definition
-*   **IDL**: Protocol Buffers (Protobuf)
-*   **Tooling**: Buf
+### API Definition
+- **Protocol Buffers** (Protobuf) + **Buf** tooling
 
+---
 
-## 3. Database & Data Model
+## 3. Database Schema
 
 ### `users` Table
-Stores registered user information.
-*   `id`: UUID (Primary Key)
-*   `email`: string (Unique, Not Null)
-*   `password_hash`: string (Not Null, bcrypt/argon2)
-*   `display_name`: string
-*   `created_at`: timestamp
-*   `updated_at`: timestamp
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | UUID | Primary Key, auto-generated |
+| email | VARCHAR | Unique, Not Null |
+| password_hash | VARCHAR | Not Null |
+| display_name | VARCHAR | Unique |
+| created_at | TIMESTAMP | Default NOW() |
+| updated_at | TIMESTAMP | Default NOW() |
 
-## 4. Authentication & Features
+### `images` Table (NEW)
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | UUID | Primary Key, auto-generated |
+| owner_id | UUID | Foreign Key → users.id, Not Null |
+| filename | VARCHAR | Not Null |
+| content_type | VARCHAR | Not Null (e.g., "image/jpeg") |
+| data | BYTEA | Not Null (binary image data) |
+| title | VARCHAR | Optional |
+| description | TEXT | Optional |
+| created_at | TIMESTAMP | Default NOW() |
+| updated_at | TIMESTAMP | Default NOW() |
 
-### Core Features
-1.  **Registration (`/register`)**:
-    *   User signs up with Email and Password.
-    *   System hashes password and creates `users` record.
-    *   Check and return error if the registering user already exists
-    *   When registration is done correctly, return to home page with registered user status shown
-2.  **Login (`/login`)**:
-    *   User authenticates with Email and Password.
-    *   System verifies hash and issues a session token.
-    *   Once login is valid, return to home page with loginned user status shown
-3.  **Update(`/update`)**:
-    *   Logged in user can update their name, email, and password
-    *   To validate the genuin user, the user must type current password before proceeding update
-    *   Update is allowed to change partial information. Unchanged user status is left blank so that the server-side ignore to override exist status
-    *   When email is updated, make sure the updated email doesn't exist in the registered info
-    *   When name is update, make sure the updated name doesn't exist in the registered info
+---
 
-### API Services
-*   **AuthService**:
-    *   `Register(RegisterRequest) returns (RegisterResponse)`
-    *   `Login(LoginRequest) returns (LoginResponse)`
-*   **UserService**:
-    *   `GetUser(GetUserRequest) returns (GetUserResponse)` (protected)
+## 4. Features
 
-## 5. Architecture & Project Structure
+### Authentication
+1. **Register** (`/register`): Create account with email/password
+2. **Login** (`/login`): Authenticate and receive session token
+3. **Update Profile** (`/update`): Modify name/email/password (requires current password)
 
-The project follows a monorepo-style layout where the API definition ensures consistency between the frontend and backend.
+### Image Gallery (NEW)
+1. **Upload Image**: Authenticated user uploads JPEG file
+   - Max file size: 5MB
+   - Supported formats: JPEG only (for now)
+   - Image stored in database with owner reference
 
-```text
+2. **View Own Images** (`/my-images`): User sees their uploaded images
+   - Can view, edit, delete their images
+
+3. **View All Images** (`/gallery`): Browse all public images
+   - Shows image with uploader info
+   - Users can only view others' images (no edit/delete)
+
+4. **Edit Image** (owner only): Update title/description
+5. **Delete Image** (owner only): Remove from database
+
+---
+
+## 5. API Services
+
+### AuthService
+```protobuf
+service AuthService {
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Login(LoginRequest) returns (LoginResponse);
+}
+```
+
+### UserService
+```protobuf
+service UserService {
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
+}
+```
+
+### ImageService (NEW)
+```protobuf
+service ImageService {
+  // Upload a new image (owner = authenticated user)
+  rpc UploadImage(UploadImageRequest) returns (UploadImageResponse);
+  
+  // Get single image by ID (anyone can view)
+  rpc GetImage(GetImageRequest) returns (GetImageResponse);
+  
+  // List all images (public gallery)
+  rpc ListImages(ListImagesRequest) returns (ListImagesResponse);
+  
+  // List images owned by current user
+  rpc ListMyImages(ListMyImagesRequest) returns (ListMyImagesResponse);
+  
+  // Update image metadata (owner only)
+  rpc UpdateImage(UpdateImageRequest) returns (UpdateImageResponse);
+  
+  // Delete image (owner only)
+  rpc DeleteImage(DeleteImageRequest) returns (DeleteImageResponse);
+}
+```
+
+---
+
+## 6. Authorization Rules
+
+| Action | Who Can Perform |
+|--------|-----------------|
+| Upload image | Authenticated user |
+| View image | Anyone (public) |
+| View uploader info | Anyone (public) |
+| Edit image metadata | Owner only |
+| Delete image | Owner only |
+
+---
+
+## 7. Project Structure
+
+```
 /galleryblue
-├── buf.gen.yaml       # Buf configuration for code generation
-├── go.mod             # Go module definition
-├── proto/             # API Definitions (Source of Truth)
-│   └── users/
-│       └── v1/
-│           └── user.proto
-├── gen/               # Auto-generated code (DO NOT EDIT)
-│   ├── go/            # Generated Go structs & interfaces
-│   └── ts/            # Generated TypeScript types & hooks
-└── frontend/          # React Application
+├── docker-compose.yml    # Container orchestration
+├── Dockerfile            # Multi-stage build (production/development)
+├── Makefile              # Development commands
+├── proto/
+│   └── users/v1/
+│       └── user.proto    # User & Image API definitions
+├── gen/                  # Generated code (DO NOT EDIT)
+│   └── go/
+├── internal/
+│   ├── handlers/         # gRPC implementations
+│   └── db/               # Database queries
+├── frontend/
+│   ├── src/pages/        # React pages
+│   ├── src/components/   # Reusable components
+│   └── src/gen/          # Generated TypeScript
+└── init.sql              # Database schema
 ```
 
-## 6. Development Workflow
+---
 
-1.  **Define API**: Schemas are written in `proto/`.
-2.  **Generate Code**: Run `buf generate` to update `gen/` with Go and TypeScript artifacts.
-    *   **Backend Output**: `gen/go` (Module: `github.com/mzzz-zzm/galleryblue/gen/go`)
-    *   **Frontend Output**: `gen/ts` (TypeScript types, Connect Client, and TanStack Query hooks).
-3.  **Implement Backend**: Fulfill the generated Go interfaces in the backend service using the generated structs.
-4.  **Implement Frontend**: Import hooks from `gen/ts` (e.g., `useGetUser`) and build UI components.
+## 8. Development Workflow
 
-## 7. Configuration Details
+1. **Start services**: `make docker-up`
+2. **Define API**: Edit `proto/users/v1/user.proto`
+3. **Generate code**: `make docker-rebuild`
+4. **Implement backend**: Add handlers in `internal/handlers/`
+5. **Implement frontend**: Create pages/components using generated hooks
+6. **Test**: `make docker-logs` to debug
 
-### `buf.gen.yaml`
-The configuration is set to version `v2` and defines plugins for both Go and TypeScript generation.
-*   **Managed Mode**: Enabled, with `go_package_prefix` set to `github.com/mzzz-zzm/galleryblue/gen/go`.
-*   **Go Plugins**: `protoc-gen-go`, `protoc-gen-connect-go`.
-*   **TypeScript Plugins**: `protoc-gen-es`, `protoc-gen-connect-es`, `protoc-gen-connect-query`.
-
-### Frontend Usage Pattern
-Components should utilize the generated hooks for data fetching, eliminating manual `fetch` calls or manual type definitions for API responses.
-
-```typescript
-// Example Usage
-import { useGetUser } from "../gen/ts/users/v1/user-UserService_connectquery";
-
-export const UserProfile = ({ userId }: { userId: string }) => {
-  const { data, isLoading } = useGetUser({ id: userId });
-  if (isLoading) return <Spinner />;
-  return <h1>{data?.name}</h1>;
-};
-```
-
-## 8. Next Steps (Setup)
-1.  Initialize Go module: `go mod init github.com/mzzz-zzm/galleryblue`.
-2.  Setup `frontend` directory (e.g., `npm create vite@latest frontend`).
-3.  Create `proto` directory and initial definitions.
-4.  Run `buf generate`.
+See [DEVELOPMENT.md](DEVELOPMENT.md) for detailed guide.

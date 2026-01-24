@@ -16,7 +16,31 @@ service UserService {
   rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
 }
 
+// ImageService handles image operations
+service ImageService {
+  // Upload a new image (authenticated user becomes owner)
+  rpc UploadImage(UploadImageRequest) returns (UploadImageResponse);
+  
+  // Get single image by ID (public)
+  rpc GetImage(GetImageRequest) returns (GetImageResponse);
+  
+  // List all images (public gallery)
+  rpc ListImages(ListImagesRequest) returns (ListImagesResponse);
+  
+  // List images owned by current user
+  rpc ListMyImages(ListMyImagesRequest) returns (ListMyImagesResponse);
+  
+  // Update image metadata (owner only)
+  rpc UpdateImage(UpdateImageRequest) returns (UpdateImageResponse);
+  
+  // Delete image (owner only)
+  rpc DeleteImage(DeleteImageRequest) returns (DeleteImageResponse);
+}
+
+// ============================================================
 // Auth messages
+// ============================================================
+
 message RegisterRequest {
   string email = 1;
   string password = 2;
@@ -41,7 +65,10 @@ message LoginResponse {
   string email = 4;
 }
 
+// ============================================================
 // User messages
+// ============================================================
+
 message GetUserRequest {
   string id = 1;
 }
@@ -63,4 +90,87 @@ message UpdateUserResponse {
   string user_id = 1;
   string display_name = 2;
   string email = 3;
+}
+
+// ============================================================
+// Image messages
+// ============================================================
+
+message UploadImageRequest {
+  string filename = 1;
+  string content_type = 2;  // e.g., "image/jpeg"
+  bytes data = 3;           // binary image data
+  string title = 4;
+  string description = 5;
+}
+
+message UploadImageResponse {
+  string image_id = 1;
+}
+
+message GetImageRequest {
+  string id = 1;
+}
+
+message GetImageResponse {
+  string id = 1;
+  string owner_id = 2;
+  string owner_display_name = 3;
+  string filename = 4;
+  string content_type = 5;
+  bytes data = 6;
+  string title = 7;
+  string description = 8;
+  string created_at = 9;
+}
+
+message ListImagesRequest {
+  int32 limit = 1;   // max results (default 50)
+  int32 offset = 2;  // pagination offset
+}
+
+message ListImagesResponse {
+  repeated ImageInfo images = 1;
+  int32 total = 2;
+}
+
+message ListMyImagesRequest {
+  int32 limit = 1;
+  int32 offset = 2;
+}
+
+message ListMyImagesResponse {
+  repeated ImageInfo images = 1;
+  int32 total = 2;
+}
+
+// ImageInfo is a summary with thumbnail for gallery display
+message ImageInfo {
+  string id = 1;
+  string owner_id = 2;
+  string owner_display_name = 3;
+  string filename = 4;
+  string title = 5;
+  string created_at = 6;
+  bytes thumbnail = 7;  // Reduced-size thumbnail image
+}
+
+message UpdateImageRequest {
+  string id = 1;
+  optional string title = 2;
+  optional string description = 3;
+}
+
+message UpdateImageResponse {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+}
+
+message DeleteImageRequest {
+  string id = 1;
+}
+
+message DeleteImageResponse {
+  bool success = 1;
 }

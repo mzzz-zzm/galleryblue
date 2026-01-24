@@ -7,6 +7,9 @@ import { HomePage } from "./pages/HomePage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { LoginPage } from "./pages/LoginPage";
 import { UpdatePage } from "./pages/UpdatePage";
+import { UploadPage } from "./pages/UploadPage";
+import { GalleryPage } from "./pages/GalleryPage";
+import { MyImagesPage } from "./pages/MyImagesPage";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +24,9 @@ function App() {
                             <Route path="/register" element={<RegisterPage />} />
                             <Route path="/login" element={<LoginPage />} />
                             <Route path="/update" element={<UpdatePage />} />
+                            <Route path="/upload" element={<UploadPage />} />
+                            <Route path="/gallery" element={<GalleryPage />} />
+                            <Route path="/my-images" element={<MyImagesPage />} />
                         </Routes>
                     </AuthProvider>
                 </QueryClientProvider>

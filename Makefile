@@ -70,6 +70,18 @@ docker-clean:
 	docker compose --profile dev down -v --rmi local
 	@echo "Docker cleanup complete."
 
+# Reset database (drops volume and reinitializes with init.sql)
+.PHONY: docker-db-reset
+docker-db-reset:
+	@echo "Resetting database..."
+	docker compose down
+	docker volume rm galleryblue_postgres_data 2>/dev/null || true
+	docker compose up -d db
+	@echo "Waiting for database to initialize..."
+	@sleep 5
+	docker compose up -d
+	@echo "Database reset complete. All data has been cleared."
+
 # =============================================================================
 # LOCAL DEVELOPMENT COMMANDS (Requires local Go SDK)
 # =============================================================================

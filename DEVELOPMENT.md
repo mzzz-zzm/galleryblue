@@ -20,6 +20,46 @@ make docker-down
 
 ---
 
+## Database Management
+
+The database schema is defined in `init.sql`. It runs automatically when the PostgreSQL container starts for the first time.
+
+### When to Reset the Database
+
+Reset the database when you:
+- Modify `init.sql` (add/change tables)
+- Want to clear all data and start fresh
+- See errors like `relation "xxx" does not exist`
+
+### How to Reset
+
+```bash
+# Reset database (clears all data!)
+make docker-db-reset
+```
+
+> **Warning**: This deletes all data including users and images.
+
+### Adding New Tables
+
+1. Edit `init.sql` to add your table:
+   ```sql
+   CREATE TABLE IF NOT EXISTS my_table (
+       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+       name VARCHAR(255) NOT NULL,
+       created_at TIMESTAMP DEFAULT NOW()
+   );
+   ```
+
+2. Reset the database:
+   ```bash
+   make docker-db-reset
+   ```
+
+3. Register a new user (old data is cleared)
+
+---
+
 ## Adding a New gRPC API
 
 ### Step 1: Define the Proto
@@ -27,7 +67,6 @@ make docker-down
 Edit `proto/users/v1/user.proto`:
 
 ```protobuf
-// Add new message types
 message DeleteUserRequest {
   string id = 1;
 }
@@ -36,11 +75,8 @@ message DeleteUserResponse {
   bool success = 1;
 }
 
-// Add RPC to the service
 service UserService {
-  rpc GetUser(GetUserRequest) returns (GetUserResponse);
-  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
-  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);  // NEW
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
 }
 ```
 
@@ -49,10 +85,6 @@ service UserService {
 ```bash
 make docker-rebuild
 ```
-
-This generates:
-- `gen/go/users/v1/` - Go types and Connect handlers
-- `frontend/src/gen/users/v1/` - TypeScript types and React hooks
 
 ### Step 3: Implement Backend Handler
 
@@ -63,16 +95,11 @@ func (s *UserServer) DeleteUser(
     ctx context.Context,
     req *connect.Request[usersv1.DeleteUserRequest],
 ) (*connect.Response[usersv1.DeleteUserResponse], error) {
-    userID := req.Msg.Id
-    
-    err := db.DeleteUser(ctx, userID)
+    err := db.DeleteUser(ctx, req.Msg.Id)
     if err != nil {
         return nil, connect.NewError(connect.CodeInternal, err)
     }
-    
-    return connect.NewResponse(&usersv1.DeleteUserResponse{
-        Success: true,
-    }), nil
+    return connect.NewResponse(&usersv1.DeleteUserResponse{Success: true}), nil
 }
 ```
 
@@ -87,42 +114,15 @@ func DeleteUser(ctx context.Context, userID string) error {
 }
 ```
 
-### Step 5: Add Frontend Integration
+### Step 5: Add Frontend Page
 
-Create `frontend/src/pages/DeletePage.tsx`:
-
-```tsx
-import { useMutation } from '@connectrpc/connect-query';
-import { deleteUser } from '../gen/users/v1/user-UserService_connectquery';
-import { transport } from '../lib/transport';
-
-export const DeletePage = () => {
-    const deleteMutation = useMutation(deleteUser, { transport });
-    
-    const handleDelete = async (userId: string) => {
-        await deleteMutation.mutateAsync({ id: userId });
-    };
-    
-    return <button onClick={() => handleDelete("123")}>Delete</button>;
-};
-```
-
-Add route in `frontend/src/App.tsx`:
-
-```tsx
-<Route path="/delete" element={<DeletePage />} />
-```
+Create `frontend/src/pages/DeletePage.tsx` and add route in `App.tsx`.
 
 ### Step 6: Rebuild and Test
 
 ```bash
 make docker-rebuild
 make docker-logs-backend
-
-# Test API directly
-curl -X POST http://localhost:8080/users.v1.UserService/DeleteUser \
-  -H "Content-Type: application/json" \
-  -d '{"id": "123"}'
 ```
 
 ---
@@ -137,8 +137,8 @@ curl -X POST http://localhost:8080/users.v1.UserService/DeleteUser \
 | `internal/handlers/` | gRPC handler implementations |
 | `internal/db/` | Database connection and queries |
 | `frontend/src/pages/` | React pages |
-| `frontend/src/components/` | Reusable React components |
-| `frontend/src/gen/` | Generated TypeScript (do not edit) |
+| `frontend/src/components/` | Reusable components |
+| `init.sql` | Database schema |
 
 ---
 
@@ -150,8 +150,9 @@ curl -X POST http://localhost:8080/users.v1.UserService/DeleteUser \
 | `make docker-dev` | Start with hot-reload |
 | `make docker-down` | Stop all services |
 | `make docker-rebuild` | Rebuild after code changes |
+| `make docker-db-reset` | Reset database (clears data!) |
 | `make docker-logs` | View all logs |
-| `make docker-clean` | Remove containers/volumes |
+| `make docker-clean` | Remove containers/volumes/images |
 | `make help` | Show all commands |
 
 ---
@@ -160,8 +161,8 @@ curl -X POST http://localhost:8080/users.v1.UserService/DeleteUser \
 
 | Problem | Solution |
 |---------|----------|
+| "relation does not exist" | Run `make docker-db-reset` |
 | "undefined" types after proto change | Run `make docker-rebuild` |
-| Backend not finding new handler | Check method is registered in `main.go` |
-| Frontend hook not found | Verify `*_connectquery.ts` was generated |
-| Database error | Check `init.sql` has required schema |
+| Backend not finding handler | Check `main.go` registration |
 | Port already in use | Run `make docker-down` first |
+| HTTP 413 (file too large) | Check nginx `client_max_body_size` |
