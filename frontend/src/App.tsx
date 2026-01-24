@@ -3,6 +3,7 @@ import { TransportProvider } from "@connectrpc/connect-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { transport } from "./lib/transport";
 import { AuthProvider } from "./context/AuthContext";
+import { Layout } from "./components/Layout";
 import { HomePage } from "./pages/HomePage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -20,13 +21,16 @@ function App() {
                 <QueryClientProvider client={queryClient}>
                     <AuthProvider>
                         <Routes>
-                            <Route path="/" element={<HomePage />} />
+                            {/* Auth pages without sidebar */}
                             <Route path="/register" element={<RegisterPage />} />
                             <Route path="/login" element={<LoginPage />} />
-                            <Route path="/update" element={<UpdatePage />} />
-                            <Route path="/upload" element={<UploadPage />} />
-                            <Route path="/gallery" element={<GalleryPage />} />
-                            <Route path="/my-images" element={<MyImagesPage />} />
+
+                            {/* Main pages with sidebar */}
+                            <Route path="/" element={<Layout><HomePage /></Layout>} />
+                            <Route path="/update" element={<Layout><UpdatePage /></Layout>} />
+                            <Route path="/upload" element={<Layout><UploadPage /></Layout>} />
+                            <Route path="/gallery" element={<Layout><GalleryPage /></Layout>} />
+                            <Route path="/my-images" element={<Layout><MyImagesPage /></Layout>} />
                         </Routes>
                     </AuthProvider>
                 </QueryClientProvider>
@@ -36,3 +40,4 @@ function App() {
 }
 
 export default App;
+

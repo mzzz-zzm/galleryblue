@@ -27,7 +27,8 @@ body {
 }
 
 /* Auth Pages */
-.auth-page, .home-page {
+.auth-page,
+.home-page {
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -35,7 +36,8 @@ body {
     padding: 2rem;
 }
 
-.auth-container, .home-container {
+.auth-container,
+.home-container {
     background: var(--color-bg-card);
     border-radius: var(--border-radius);
     padding: 2.5rem;
@@ -45,7 +47,8 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.auth-title, .home-title {
+.auth-title,
+.home-title {
     font-size: 1.75rem;
     font-weight: 700;
     text-align: center;
@@ -193,7 +196,8 @@ body {
 }
 
 /* User Card (Home page) */
-.user-card, .guest-card {
+.user-card,
+.guest-card {
     text-align: center;
 }
 
@@ -226,7 +230,8 @@ body {
     font-size: 0.875rem;
 }
 
-.user-actions, .guest-actions {
+.user-actions,
+.guest-actions {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
@@ -236,4 +241,157 @@ body {
     color: var(--color-text-muted);
     margin-bottom: 1.5rem;
     font-size: 1rem;
+}
+
+/* App Layout with Sidebar */
+.app-layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+.main-content {
+    flex: 1;
+    margin-left: 260px;
+    min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 260px;
+    background: var(--color-bg-card);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+}
+
+.sidebar-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+}
+
+.sidebar-user {
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.sidebar-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 600;
+    color: white;
+    flex-shrink: 0;
+}
+
+.sidebar-username {
+    font-weight: 500;
+    color: var(--color-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sidebar-nav {
+    flex: 1;
+    padding: 1rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1.5rem;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+}
+
+.sidebar-link:hover:not(.disabled) {
+    color: var(--color-text);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-link.active {
+    color: var(--color-primary);
+    background: rgba(37, 99, 235, 0.1);
+    border-right: 3px solid var(--color-primary);
+}
+
+.sidebar-link.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.sidebar-icon {
+    font-size: 1.1rem;
+    width: 24px;
+    text-align: center;
+}
+
+.sidebar-lock {
+    margin-left: auto;
+    font-size: 0.8rem;
+}
+
+.sidebar-footer {
+    padding: 1rem 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-logout {
+    color: var(--color-error);
+}
+
+.sidebar-logout:hover {
+    background: rgba(239, 68, 68, 0.1) !important;
+}
+
+/* Responsive - Hide sidebar on mobile */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    .main-content {
+        margin-left: 0;
+    }
 }
