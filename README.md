@@ -1,64 +1,83 @@
 # GalleryBlue
 
-A modern, type-safe web application built with Go (ConnectRPC) and React (Vite + Connect-Query).
+A modern, type-safe web application built with Go (ConnectRPC) and React (Vite + TanStack Query).
+
+## Quick Start
+
+```bash
+# Start all services with Docker
+make docker-up
+
+# Open in browser
+open http://localhost:3000
+```
 
 ## Prerequisites
 
-- **Go**: v1.21+ (or use the provided local SDK environment)
-- **Node.js**: v18+
-- **npm**: v9+
+- **Docker** and **Docker Compose** (recommended)
+- Or: Go v1.21+, Node.js v18+, PostgreSQL 16+
 
 ## How to Run
 
-You need to run the **Backend** and **Frontend** in separate terminals.
-
-### 1. Start the Backend
-
-The backend runs on port `8080`.
+### Option A: Docker (Recommended)
 
 ```bash
-# If using the local SDK environment set up by the agent:
-export GOROOT=$(pwd)/.go-sdk
-export PATH=$GOROOT/bin:$PATH
+# Production mode
+make docker-up
 
-# Run the server
-go run cmd/server/main.go
+# Development mode with hot-reload
+make docker-dev
+
+# Stop services
+make docker-down
 ```
 
-You should see: `Server executing on localhost:8080`
+**Services:**
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:3000 |
+| Backend | http://localhost:8080 |
+| Database | localhost:5432 |
 
-### 2. Start the Frontend
+### Option B: Local Development
 
-The frontend runs on port `5173` (by default).
+See [DEVELOPMENT.md](DEVELOPMENT.md) for local setup with Go SDK.
+
+## Available Commands
 
 ```bash
-cd frontend
-npm install  # Only needed the first time
-npm run dev
+make docker-up        # Start production
+make docker-dev       # Start with hot-reload
+make docker-down      # Stop services
+make docker-rebuild   # Rebuild after changes
+make docker-logs      # View logs
+make help             # Show all commands
 ```
-
-You should see: `Local: http://localhost:5173/`
-
-### 3. Access the App
-
-Open your browser to: **[http://localhost:5173](http://localhost:5173)**
-
-- You should see the User Profile for "Jane Doe".
-- **Debug UI**: Pass the `userId` prop or check the debug section to verify connection status.
-- **Manual Fetch**: Use the "Test Manual Fetch" button to verify if the browser can reach the backend via the Vite Proxy.
-
-## How to Stop
-
-To stop the application:
-
-1.  Go to the terminal running the **Backend**.
-2.  Press `Ctrl + C`.
-3.  Go to the terminal running the **Frontend**.
-4.  Press `Ctrl + C`.
 
 ## Project Structure
 
-- `cmd/server/`: Backend entry point.
-- `frontend/`: React application (Vite).
-- `proto/`: Protocol Buffer definitions (API Schema).
-- `gen/`: Generated Go and TypeScript code (Do not edit manually).
+```
+├── cmd/server/          # Backend entry point
+├── internal/
+│   ├── handlers/        # gRPC handler implementations
+│   └── db/              # Database connection & queries
+├── proto/               # Protocol Buffer definitions
+├── gen/                 # Generated code (do not edit)
+├── frontend/
+│   ├── src/pages/       # React pages
+│   ├── src/components/  # Reusable components
+│   └── src/gen/         # Generated TypeScript (do not edit)
+├── Dockerfile           # Multi-stage Docker build
+├── docker-compose.yml   # Service orchestration
+└── Makefile             # Development commands
+```
+
+## Adding New Features
+
+See [DEVELOPMENT.md](DEVELOPMENT.md) for step-by-step guide on adding new gRPC APIs.
+
+## Tech Stack
+
+- **Backend**: Go, ConnectRPC, PostgreSQL
+- **Frontend**: React, Vite, TanStack Query
+- **Infrastructure**: Docker, nginx
